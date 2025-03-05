@@ -15,6 +15,8 @@ won't survive reload and thus the init listener is called multiple times.
 Please see the [Tab Scope blog post](https://mvysny.github.io/vaadin-ui-scope/)
 and [issue #13468](https://github.com/vaadin/flow/issues/13468) for more details.
 
+[Live demo at v-herd](https://v-herd.eu/vaadin-tab-scope-example).
+
 # Documentation
 
 Please see the [Vaadin Boot](https://github.com/mvysny/vaadin-boot#preparing-environment) documentation
