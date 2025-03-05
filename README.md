@@ -33,16 +33,19 @@ public class ApplicationServiceInitListener
     @Override
     public void serviceInit(ServiceInitEvent event) {
         event.getSource().addUIInitListener(TabScope.uiInitListener(ts -> {
-            // this tab init listener is called exactly once per browser tab
-            if (ts.getValues().getAttribute("hello") != null) {
-                throw new IllegalStateException("This is unexpected - we're already initialized but we shouldn't be!");
-            }
             ts.getValues().setAttribute("hello", counter.incrementAndGet());
         }));
     }
 }
 ```
-You can access/modify the tab-scoped values from your routes, layouts and components, or generally any other code which runs in
-Vaadin UI thread.
+You can now access/modify the tab-scoped values from your routes, layouts and components, or generally any other code which runs in
+Vaadin UI thread. See the `MainView` and `MainViewNoAppLayout` views for example on a regular route (prototype-scoped:
+new instance every time) accessing tab-scoped values.
 
-TODO tab-scoped routes
+## Tab-scoped routes
+
+It's also possible to have tab-scoped routes - instances of those routes are preserved and reused
+when they're navigated to repeatedly. A special `Instantiator` is implemented, to
+cache `@TabScoped`-annotated views in the `TabScope` map - see `TabScopedRouteInstantiator` for more details.
+
+See the `TabScopedView` and `TabScopedViewNoAppLayout` routes for more details.

@@ -9,7 +9,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A custom instantiator which adds support for tab-scoped routes (annotated with
- * {@link TabScoped}).
+ * {@link TabScoped}). See <a href="https://vaadin.com/docs/latest/flow/advanced/custom-instantiators">Custom Instantiator</a>
+ * Vaadin documentation for more details.
  */
 public class TabScopedRouteInstantiator extends DefaultInstantiator {
     /**
