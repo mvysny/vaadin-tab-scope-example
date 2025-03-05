@@ -1,5 +1,6 @@
 package com.vaadin.starter.skeleton;
 
+import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.di.DefaultInstantiator;
 import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.di.InstantiatorFactory;
@@ -28,6 +29,12 @@ public class TabScopedRouteInstantiator extends DefaultInstantiator {
             if (instance == null) {
                 instance = super.getOrCreate(type);
                 TabScope.getCurrent().getValues().setAttribute(type, instance);
+            }
+            if (instance instanceof HasElement) {
+                // fix the Exception
+                // "Can't move a node from one state tree to another. If this is intentional, first remove the node from its current state tree by calling removeFromTree."
+                // for TabScoped routes.
+                ((HasElement) instance).getElement().removeFromTree();
             }
             return instance;
         }
