@@ -77,7 +77,8 @@ public final class TabScope implements Serializable {
 
     /**
      * Initializes the tab scope.
-     * @param tabInitListener when the tab scope has been initialized, this listener is called.
+     * @param tabInitListener when the tab scope has been initialized, this listener is called. Invoked exactly once for a browser tab,
+     *                         before any route or layout is created or initialized.
      */
     private static void init(@NotNull SerializableConsumer<TabScope> tabInitListener) {
         final UI ui = Objects.requireNonNull(UI.getCurrent(), "Must be called from Vaadin UI thread");
@@ -103,6 +104,19 @@ public final class TabScope implements Serializable {
                 tabInitListener.accept(tabScope1);
             }
         });
+
+        // Important note regarding the "before any route or layout is created or initialized"
+        // This requirement is not actually implemented anywhere in this code, but
+        // instead relies on the way internal Vaadin machinery works.
+        //
+        // The way this works is that Vaadin (when @PreserveOnRefresh is used) defers navigation
+        // until the ECD is fetched (since @PreserveOnRefresh needs to know the ECD.windowName too).
+        // Hopefully, our ExtendedClientDetailsReceiver is invoked first, initializing the TabScope;
+        // the deferred navigation hopefully happens afterwards.
+        //
+        // The usage of word "hopefully" above hints that this solution is a bit fragile, but
+        // unfortunately that's the only way. Vote for https://github.com/vaadin/flow/issues/13468
+        // to be implemented, so that a better solution can be found.
     }
 
     /**
