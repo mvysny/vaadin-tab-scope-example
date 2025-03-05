@@ -20,4 +20,27 @@ and [issue #13468](https://github.com/vaadin/flow/issues/13468) for more details
 Please see the [Vaadin Boot](https://github.com/mvysny/vaadin-boot#preparing-environment) documentation
 on how you run, develop and package this Vaadin-Boot-based app.
 
-TODO document the solution
+The `TabScope` class is used to store tab-scoped values. First, it needs to be
+initialized in the UI Init Listener:
+```java
+public class ApplicationServiceInitListener
+        implements VaadinServiceInitListener {
+
+    static final AtomicInteger counter = new AtomicInteger();
+
+    @Override
+    public void serviceInit(ServiceInitEvent event) {
+        event.getSource().addUIInitListener(TabScope.uiInitListener(ts -> {
+            // this tab init listener is called exactly once per browser tab
+            if (ts.getValues().getAttribute("hello") != null) {
+                throw new IllegalStateException("This is unexpected - we're already initialized but we shouldn't be!");
+            }
+            ts.getValues().setAttribute("hello", counter.incrementAndGet());
+        }));
+    }
+}
+```
+You can access/modify the tab-scoped values from your routes, layouts and components, or generally any other code which runs in
+Vaadin UI thread.
+
+TODO tab-scoped routes
