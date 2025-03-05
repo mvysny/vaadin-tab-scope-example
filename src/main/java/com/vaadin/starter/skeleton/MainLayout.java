@@ -34,7 +34,9 @@ public class MainLayout extends AppLayout {
         SideNav sideNav = new SideNav();
         sideNav.addItem(
                 new SideNavItem("Main View", MainView.class),
-                new SideNavItem("Main View (No App Layout)", MainViewNoAppLayout.class)
+                new SideNavItem("Main View (No App Layout)", MainViewNoAppLayout.class),
+                new SideNavItem("Tab Scoped View", TabScopedView.class),
+                new SideNavItem("Tab Scoped View (No App Layout)", TabScopedViewNoAppLayout.class)
         );
         return sideNav;
     }
