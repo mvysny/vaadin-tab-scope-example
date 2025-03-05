@@ -105,6 +105,14 @@ public final class TabScope implements Serializable {
         });
     }
 
+    /**
+     * Returns the current tab scope.
+     * Can be called from your routes, layouts and components, or generally any other code which runs in
+     * Vaadin UI thread.
+     * <br/>
+     * Can not be called from the UI init listener itself, or before the UI init listener has been run.
+     * @return the tab scope, not null.
+     */
     @NotNull
     public static TabScope getCurrent() {
         // @todo how to clean up a tab scope? Not in UI destroy listener since a new UI can spring up right away. Steal from Vaadin Spring Plugin
