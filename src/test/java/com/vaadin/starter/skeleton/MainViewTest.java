@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ.*;
 import static com.github.mvysny.kaributesting.v10.NotificationsKt.expectNotifications;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MainViewTest {
     private static Routes routes;
@@ -39,9 +40,21 @@ public class MainViewTest {
     }
 
     @Test
+    public void scopeSurvivesPageReload() {
+        final TabScope current = TabScope.getCurrent();
+        assertNotNull(current);
+        UI.getCurrent().getPage().reload();
+        assertSame(TabScope.getCurrent(), current);
+    }
+
+    @Test
     public void pageReloadShouldPreserveTheValue() {
+        final MainView mainView = _get(MainView.class);
         _assertOne(Span.class, spec -> spec.withText("Value: 1"));
         UI.getCurrent().getPage().reload();
+
+        // check that we have a new instance of main view
+        assertNotSame(_get(MainView.class), mainView);
         _assertOne(Span.class, spec -> spec.withText("Value: 1"));
     }
 }
