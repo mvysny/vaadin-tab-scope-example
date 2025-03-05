@@ -98,6 +98,10 @@ public final class TabScope implements Serializable {
         }
         ui.getPage().retrieveExtendedClientDetails(ecd -> {
             TabScope tabScope1 = getInstances().get(ecd.getWindowName());
+            // tabScope1 may not be null. This can happen on page reload, when there's a new UI instance
+            // (which doesn't carry over ExtendedClientDetails from the old UI instance:
+            // ui.getInternals().getExtendedClientDetails() returns null),
+            // but the TabScope is already created for this browser tab by the previous UI.
             if (tabScope1 == null) {
                 tabScope1 = new TabScope();
                 getInstances().put(ecd.getWindowName(), tabScope1);
