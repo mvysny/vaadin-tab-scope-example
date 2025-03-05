@@ -14,6 +14,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Stores values in a browser tab scope - all values inserted into {@link #getValues()} are preserved per browser tab.
+ * The tab scope survives page reloads and navigation.
+ * <br/>
+ * To use this you need to:
+ * <ul>
+ *     <li>Call {@link #init(SerializableConsumer)} from {@link com.vaadin.flow.server.VaadinService#addUIInitListener(UIInitListener) UI Init Listener}</li>
+ *     <li>Call {@link #getCurrent()} from everywhere else from your app: from your routes and layouts etc</li>
+ * </ul>
+ * <h3>Vaadin 8</h3>
+ * This is how the Vaadin 8 UI scope used to work. When migrating, just store your values to
+ * {@link #getValues()} instead to Vaadin 8 UI; perform any initialization in the <code>tab init listener</code>,
+ * passed to the {@link #uiInitListener(SerializableConsumer)}.
+ */
 public final class TabScope implements Serializable {
     private TabScope() {
         // prevent instantiation by the app itself.
@@ -51,7 +65,9 @@ public final class TabScope implements Serializable {
     /**
      * Register the UI init listener which initializes the tab scope.
      * @param tabInitListener invoked when the tab scope is ready to be used. Invoked exactly once for a browser tab,
-     *                        before any route or layout is created or initialized. Store any init values to {@link #getValues()}.
+     *                        before any route or layout is created or initialized. In the listener,
+     *                        You can store any init values to {@link #getValues()}, or perform any
+     *                        kind of initialization that only needs to be done once per browser tab.
      * @return the UI init listener
      */
     @NotNull
@@ -59,6 +75,10 @@ public final class TabScope implements Serializable {
         return event -> init(tabInitListener);
     }
 
+    /**
+     * Initializes the tab scope.
+     * @param tabInitListener when the tab scope has been initialized, this listener is called.
+     */
     private static void init(@NotNull SerializableConsumer<TabScope> tabInitListener) {
         final UI ui = Objects.requireNonNull(UI.getCurrent(), "Must be called from Vaadin UI thread");
         final ExtendedClientDetails extendedClientDetails = ui.getInternals().getExtendedClientDetails();
