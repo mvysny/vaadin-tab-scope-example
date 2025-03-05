@@ -12,7 +12,7 @@ sane way to use `UI` is to store data to it via `ComponentUtil` ,
 and there is a `UIInitListener`. However, even with `@PreserveOnRefresh`, the `UI`
 won't survive reload and thus the init listener is called multiple times.
 
-Please see the [Tab Scope](https://mvysny.github.io/vaadin-ui-scope/) blog post
+Please see the [Tab Scope blog post](https://mvysny.github.io/vaadin-ui-scope/)
 and [issue #13468](https://github.com/vaadin/flow/issues/13468) for more details.
 
 # Documentation
