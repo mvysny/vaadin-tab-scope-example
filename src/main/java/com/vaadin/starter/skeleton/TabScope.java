@@ -133,7 +133,6 @@ public final class TabScope implements Serializable {
      */
     @NotNull
     public static TabScope getCurrent() {
-        // @todo how to clean up a tab scope? Not in UI destroy listener since a new UI can spring up right away. Steal from Vaadin Spring Plugin
         final UI ui = Objects.requireNonNull(UI.getCurrent(), "Must be called from Vaadin UI thread");
 
         final Map<String, TabScope> instances = getInstances();

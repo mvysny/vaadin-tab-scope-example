@@ -55,3 +55,27 @@ when they're navigated to repeatedly. A special `Instantiator` is implemented, t
 cache `@TabScoped`-annotated views in the `TabScope` map - see `TabScopedRouteInstantiator` for more details.
 
 See the `TabScopedView` and `TabScopedViewNoAppLayout` routes for more details.
+
+## Cleaning up
+
+This is the open topic. The way `TabScope` works is that it keeps a `Map` from `ExtendedClientDetails.windowName`
+(which identifies the browser tab uniquely) to the instance of `TabScope`.
+At the moment, even if you close the browser tab, the tab-scoped routes and values will
+continue to be stored in the Vaadin Session, and they are never removed manually.
+The values and routes are only removed and GC-ed when the whole session goes down.
+
+This is exactly the way in which the official `vaadin-spring` plugin, the `VaadinRouteScope` `BeanStore` works,
+so I'll just keep it like that for the time being.
+
+Couple of considerations:
+
+* I can't purge the tab scope when the UI is closed: when refreshing, old UI is killed and detached,
+  before the new one springs to life. So, I can't purge the tab scope on UI detach, since that would cause tab-scoped
+  values to not survive the page reload.
+* I could perhaps mark down that the UI currently associated with the `TabScope` is detached, and perform
+  some kind of GC after certain time - the same way Vaadin cleans up inactive UIs. There would have to be
+  a configurable timeout though...
+* or maybe not: on page reload, it is expected that the new UI springs to life
+  fast. So maybe I can wait 60 seconds tops, then kill the tab scope.
+
+Remains to be seen.
