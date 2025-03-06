@@ -23,7 +23,7 @@ issues. Moreover, the implementation works correctly even without the `@Preserve
 
 [Live demo at v-herd](https://v-herd.eu/vaadin-tab-scope-example).
 
-> Note: this branch demoes the tab scope for Vaadin 24. See the [v23](tree/v23) branch for
+> Note: this branch demoes the tab scope for Vaadin 24. See the [v23](../../tree/v23) branch for
 > Vaadin 23 version of this app.
 
 # Documentation
