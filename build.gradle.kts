@@ -14,11 +14,7 @@ repositories {
 
 dependencies {
     // Vaadin
-    implementation(libs.vaadin.core) {
-        if (vaadin.effective.productionMode.get()) {
-            exclude(module = "vaadin-dev")
-        }
-    }
+    implementation(libs.vaadin.core)
 
     // Vaadin-Boot
     implementation(libs.vaadin.boot)
