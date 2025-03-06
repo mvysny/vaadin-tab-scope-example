@@ -4,8 +4,8 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.Scroller;
-import com.vaadin.flow.component.sidenav.SideNav;
-import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +20,7 @@ public class MainLayout extends AppLayout {
         title.getStyle().set("font-size", "var(--lumo-font-size-l)")
                 .set("margin", "0");
 
-        SideNav nav = getSideNav();
+        VerticalLayout nav = getSideNav();
 
         Scroller scroller = new Scroller(nav);
         scroller.setClassName(LumoUtility.Padding.SMALL);
@@ -30,13 +30,13 @@ public class MainLayout extends AppLayout {
     }
 
     @NotNull
-    private SideNav getSideNav() {
-        SideNav sideNav = new SideNav();
-        sideNav.addItem(
-                new SideNavItem("Main View", MainView.class),
-                new SideNavItem("Main View (No App Layout)", MainViewNoAppLayout.class),
-                new SideNavItem("Tab Scoped View", TabScopedView.class),
-                new SideNavItem("Tab Scoped View (No App Layout)", TabScopedViewNoAppLayout.class)
+    private VerticalLayout getSideNav() {
+        VerticalLayout sideNav = new VerticalLayout();
+        sideNav.add(
+                new RouterLink("Main View", MainView.class),
+                new RouterLink("Main View (No App Layout)", MainViewNoAppLayout.class),
+                new RouterLink("Tab Scoped View", TabScopedView.class),
+                new RouterLink("Tab Scoped View (No App Layout)", TabScopedViewNoAppLayout.class)
         );
         return sideNav;
     }
