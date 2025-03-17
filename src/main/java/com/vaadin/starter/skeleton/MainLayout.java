@@ -1,8 +1,10 @@
 package com.vaadin.starter.skeleton;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.sidenav.SideNav;
 import com.vaadin.flow.component.sidenav.SideNavItem;
@@ -27,6 +29,8 @@ public class MainLayout extends AppLayout {
 
         addToDrawer(scroller);
         addToNavbar(toggle, title);
+
+        UI.getCurrent().getPage().retrieveExtendedClientDetails(e -> addToDrawer(new Span("Browser tab ID: " + e.getWindowName())));
     }
 
     @NotNull
