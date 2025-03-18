@@ -59,6 +59,26 @@ cache `@TabScoped`-annotated views in the `TabScope` map - see `TabScopedRouteIn
 
 See the `TabScopedView` and `TabScopedViewNoAppLayout` routes for more details.
 
+## Limitations
+
+The functionality of this prototype depends on browsers preserving the `window.name` value on navigation.
+In general, the following actions trigger a navigation:
+
+- Clicking a link from within the app
+- Typing in a new address into browser's address bar, or clicking bookmarked link in browser's bookmark toolbar
+- Going forward/back in history
+- When a Selenium-controlled `Driver` performs page `get()`.
+
+Unfortunately, certain browsers will not preserve `window.name` under certain navigation types:
+
+- Safari 18.3.1 will not preserve `window.name` when URL is typed in to browser's address bar via keyboard, or when
+  a bookmarked URL is clicked. TODO untested: possibly also when back/forward button is pressed, and also when
+  the Selenium-controlled driver performs `get()`.
+  - However, when Safari's dev tools (Web Inspector) is open, the `window.name` is preserved.
+- Similar behavior observed with Chrome as well - unconfirmed, TODO verify.
+
+See the discussion of the [issue #21141](https://github.com/vaadin/flow/issues/21141) for more details.
+
 ## Cleaning up
 
 This is the open topic. The way `TabScope` works is that it keeps a `Map` from `ExtendedClientDetails.windowName`
