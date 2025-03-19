@@ -66,6 +66,7 @@ In general, the following actions trigger a navigation:
 
 - Clicking a link from within the app
 - Typing in a new address into browser's address bar, or clicking bookmarked link in browser's bookmark toolbar
+- Calling `document.location = url` from JavaScript
 - Going forward/back in history
 - When a Selenium-controlled `Driver` performs page `get()`.
 
