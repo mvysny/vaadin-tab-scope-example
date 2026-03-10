@@ -5,6 +5,7 @@ import com.vaadin.flow.component.page.ExtendedClientDetails;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.server.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -31,9 +32,10 @@ public final class TabScope implements Serializable {
     }
     /**
      * Holds all tab-scoped values stored by the app.
+     * Set to null when the scope has been {@link #destroy() destroyed}.
      */
-    @NotNull
-    private final Attributes values = new Attributes();
+    @Nullable
+    private Attributes values = new Attributes();
 
     /**
      * Returns a map which holds all tab-scoped values stored by the app.
@@ -41,7 +43,12 @@ public final class TabScope implements Serializable {
      */
     @NotNull
     public Attributes getValues() {
-        return values;
+        return Objects.requireNonNull(values, "this scope has been destroyed");
+    }
+
+    private void destroy() {
+        values = null;
+        // @todo fire destroy listeners
     }
 
     /**
@@ -51,6 +58,7 @@ public final class TabScope implements Serializable {
      */
     @NotNull
     private static Map<String, TabScope> getInstances() {
+        @SuppressWarnings("unchecked")
         Map<String, TabScope> instances = (Map<String, TabScope>) VaadinSession.getCurrent().getAttribute("tab-scopes");
         if (instances == null) {
             instances = new HashMap<>();
@@ -70,6 +78,25 @@ public final class TabScope implements Serializable {
         Objects.requireNonNull(tabInitListener);
         var service = Objects.requireNonNull(VaadinService.getCurrent());
         service.addUIInitListener(event -> init(tabInitListener));
+        service.addSessionInitListener(event -> {
+            event.getSession().addSessionDestroyListener(e2 -> destroyAllTabScopes(e2.getSession()));
+        });
+    }
+
+    private static void destroyAllTabScopes(@NotNull VaadinSession session) {
+        Objects.requireNonNull(session);
+        if (VaadinSession.getCurrent() != session) {
+            throw new IllegalStateException("Invalid state: current session != session being destroyed");
+        }
+        if (!session.hasLock()) {
+            throw new IllegalStateException("Invalid state: session not locked");
+        }
+        Map<String, TabScope> instances = (Map<String, TabScope>) session.getAttribute("tab-scopes");
+        if (instances != null) {
+            instances.values().forEach(tabScope -> tabScope.destroy());
+            instances.clear();
+            session.setAttribute("tab-scopes", null);
+        }
     }
 
     /**
