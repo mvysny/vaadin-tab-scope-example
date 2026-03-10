@@ -1,6 +1,5 @@
 package com.vaadin.starter.skeleton;
 
-import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.page.ExtendedClientDetails;
 import com.vaadin.flow.function.SerializableConsumer;
@@ -86,20 +85,9 @@ public final class TabScope implements Serializable {
 
         // We need to fetch the Window Name (=browser tab identifier).
         // That can be retrieved from the ExtendedClientDetails (ECD).
-
-        // First, check that init() hasn't been called multiple times.
-        final TabScope tabScope = ComponentUtil.getData(ui, TabScope.class);
-        if (tabScope != null) {
-            throw new IllegalStateException("Tab scope already exists for this UI, which means that init() has been called multiple times. " + ui.getUIId() + ": " + tabScope);
-        }
-
         // Fetch the Window Name, create a new tab scope for it, and fire tabInitListener.
         ui.getPage().retrieveExtendedClientDetails(ecd -> {
             TabScope tabScope1 = getInstances().get(ecd.getWindowName());
-            // tabScope1 may not be null. This can happen on page reload, when there's a new UI instance
-            // (which doesn't carry over ExtendedClientDetails from the old UI instance:
-            // ui.getInternals().getExtendedClientDetails() returns null),
-            // but the TabScope is already created for this browser tab by the previous UI.
             if (tabScope1 == null) {
                 tabScope1 = new TabScope();
                 getInstances().put(ecd.getWindowName(), tabScope1);
