@@ -4,13 +4,12 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.page.ExtendedClientDetails;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.server.*;
+import com.vaadin.flow.shared.Registration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Stores values in a browser tab scope - all values inserted into {@link #getValues()} are preserved per browser tab.
@@ -37,6 +36,9 @@ public final class TabScope implements Serializable {
     @Nullable
     private Attributes values = new Attributes();
 
+    @NotNull
+    private final List<SerializableConsumer<TabScope>> destroyListeners = new ArrayList<>();
+
     /**
      * Returns a map which holds all tab-scoped values stored by the app.
      * @return a map which holds all tab-scoped values stored by the app.
@@ -46,9 +48,20 @@ public final class TabScope implements Serializable {
         return Objects.requireNonNull(values, "this scope has been destroyed");
     }
 
+    /**
+     * Adds a tab scope destroy listener. The listeners will be called before
+     * {@link #getValues() values} are cleared.
+     * @param listener scope destroy listener to call.
+     * @return registration
+     */
+    @NotNull
+    public Registration addDestroyListener(SerializableConsumer<TabScope> listener) {
+        return Registration.addAndRemove(destroyListeners, listener);
+    }
+
     private void destroy() {
+        destroyListeners.forEach(listener -> listener.accept(this));
         values = null;
-        // @todo fire destroy listeners
     }
 
     /**
@@ -91,9 +104,10 @@ public final class TabScope implements Serializable {
         if (!session.hasLock()) {
             throw new IllegalStateException("Invalid state: session not locked");
         }
+        @SuppressWarnings("unchecked")
         Map<String, TabScope> instances = (Map<String, TabScope>) session.getAttribute("tab-scopes");
         if (instances != null) {
-            instances.values().forEach(tabScope -> tabScope.destroy());
+            instances.values().forEach(TabScope::destroy);
             instances.clear();
             session.setAttribute("tab-scopes", null);
         }

@@ -19,6 +19,9 @@ public class ApplicationServiceInitListener
                 throw new IllegalStateException("This is unexpected - we're already initialized but we shouldn't be!");
             }
             ts.getValues().setAttribute("hello", counter.incrementAndGet());
+            ts.addDestroyListener(e -> {
+                System.out.println("TabScope destroyed: " + e);
+            });
         });
     }
 }
