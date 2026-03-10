@@ -79,23 +79,21 @@ public final class TabScope implements Serializable {
      * Initializes the tab scope.
      * @param tabInitListener when the tab scope has been initialized, this listener is called. Invoked exactly once for a browser tab,
      *                         before any route or layout is created or initialized.
+     *                         Serves as a replacement for Vaadin 8 UIInitListener.
      */
     private static void init(@NotNull SerializableConsumer<TabScope> tabInitListener) {
         final UI ui = Objects.requireNonNull(UI.getCurrent(), "Must be called from Vaadin UI thread");
-        final ExtendedClientDetails extendedClientDetails = ui.getInternals().getExtendedClientDetails();
-        if (extendedClientDetails != null) {
-            throw new IllegalStateException("Called too late");
-        }
 
-        // The ECD weren't fetched, so we don't know the window name. Work around this:
-        // 1. Create TabScope and temporarily store it under UI.getUIId().
-        // 2. Fetch ECD.
-        // 3. Move TabScope from the temporary map and store it correctly under the window name.
+        // We need to fetch the Window Name (=browser tab identifier).
+        // That can be retrieved from the ExtendedClientDetails (ECD).
 
+        // First, check that init() hasn't been called multiple times.
         final TabScope tabScope = ComponentUtil.getData(ui, TabScope.class);
         if (tabScope != null) {
             throw new IllegalStateException("Tab scope already exists for this UI, which means that init() has been called multiple times. " + ui.getUIId() + ": " + tabScope);
         }
+
+        // Fetch the Window Name, create a new tab scope for it, and fire tabInitListener.
         ui.getPage().retrieveExtendedClientDetails(ecd -> {
             TabScope tabScope1 = getInstances().get(ecd.getWindowName());
             // tabScope1 may not be null. This can happen on page reload, when there's a new UI instance
