@@ -13,13 +13,12 @@ public class ApplicationServiceInitListener
 
     @Override
     public void serviceInit(ServiceInitEvent event) {
-        // this tab init listener is called exactly once per browser tab
-        event.getSource().addUIInitListener(TabScope.uiInitListener(ts -> {
+        TabScope.setup(ts -> {
             Objects.requireNonNull(TabScope.getCurrent()); // this should work as well.
             if (ts.getValues().getAttribute("hello") != null) {
                 throw new IllegalStateException("This is unexpected - we're already initialized but we shouldn't be!");
             }
             ts.getValues().setAttribute("hello", counter.incrementAndGet());
-        }));
+        });
     }
 }

@@ -3,9 +3,7 @@ package com.vaadin.starter.skeleton;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.page.ExtendedClientDetails;
 import com.vaadin.flow.function.SerializableConsumer;
-import com.vaadin.flow.server.Attributes;
-import com.vaadin.flow.server.UIInitListener;
-import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.server.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -19,13 +17,13 @@ import java.util.Objects;
  * <br/>
  * To use this you need to:
  * <ul>
- *     <li>Call {@link #init(SerializableConsumer)} from {@link com.vaadin.flow.server.VaadinService#addUIInitListener(UIInitListener) UI Init Listener}</li>
+ *     <li>Call {@link #setup(SerializableConsumer)} from {@link VaadinServiceInitListener#serviceInit(ServiceInitEvent)}</li>
  *     <li>Call {@link #getCurrent()} from everywhere else from your app: from your routes and layouts etc</li>
  * </ul>
  * <h3>Vaadin 8</h3>
  * This is how the Vaadin 8 UI scope used to work. When migrating, just store your values to
  * {@link #getValues()} instead to Vaadin 8 UI; perform any initialization in the <code>tab init listener</code>,
- * passed to the {@link #uiInitListener(SerializableConsumer)}.
+ * passed to the {@link #setup(SerializableConsumer)}.
  */
 public final class TabScope implements Serializable {
     private TabScope() {
@@ -62,16 +60,16 @@ public final class TabScope implements Serializable {
     }
 
     /**
-     * Register the UI init listener which initializes the tab scope.
+     * Sets up the tab scope mechanism. Call this from {@link com.vaadin.flow.server.VaadinServiceInitListener#serviceInit(ServiceInitEvent)}.
      * @param tabInitListener invoked when the tab scope is ready to be used. Invoked exactly once for a browser tab,
      *                        before any route or layout is created or initialized. In the listener,
-     *                        You can store any init values to {@link #getValues()}, or perform any
+     *                        you can store any init values to {@link #getValues()}, or perform any
      *                        kind of initialization that only needs to be done once per browser tab.
-     * @return the UI init listener
      */
-    @NotNull
-    public static UIInitListener uiInitListener(@NotNull SerializableConsumer<TabScope> tabInitListener) {
-        return event -> init(tabInitListener);
+    public static void setup(@NotNull SerializableConsumer<TabScope> tabInitListener) {
+        Objects.requireNonNull(tabInitListener);
+        var service = Objects.requireNonNull(VaadinService.getCurrent());
+        service.addUIInitListener(event -> init(tabInitListener));
     }
 
     /**
