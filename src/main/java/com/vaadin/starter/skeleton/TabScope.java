@@ -62,6 +62,11 @@ public final class TabScope implements Serializable {
     /**
      * Adds a tab scope destroy listener. The listeners will be called before
      * {@link #getValues() values} are cleared.
+     * <br/>
+     * Important: don't rely on the listener being called. For example,
+     * it may not be called when the session is timed out and closed by the servlet
+     * container, since in this case {@link VaadinSession#addSessionDestroyListener(SessionDestroyListener) Vaadin session destroy listeners}
+     * aren't being called at all!
      *
      * @param listener scope destroy listener to call.
      * @return registration
@@ -108,6 +113,10 @@ public final class TabScope implements Serializable {
         service.addSessionInitListener(event -> {
             event.getSession().addSessionDestroyListener(e2 -> destroyAllTabScopes(e2.getSession()));
         });
+        // @todo maybe listen for UI destroy/close/detach listeners; if all UIs of a particular
+        // tab scope are gone, kill it too. Care must be taken though: during page reload,
+        // there might be a brief period when the old UI is killed but the new one hasn't been created yet.
+        // Introduce a timeout: a tab scope should survive, say, 60 seconds without an active UI.
     }
 
     private static void destroyAllTabScopes(@NotNull VaadinSession session) {
