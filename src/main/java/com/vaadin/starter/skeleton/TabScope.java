@@ -26,9 +26,19 @@ import java.util.*;
  * passed to the {@link #setup(SerializableConsumer)}.
  */
 public final class TabScope implements Serializable {
-    private TabScope() {
+    @NotNull
+    private final String windowName;
+
+    private TabScope(@NotNull String windowName) {
         // prevent instantiation by the app itself.
+        this.windowName = Objects.requireNonNull(windowName);
     }
+
+    @Override
+    public String toString() {
+        return "TabScope{" + windowName + '}';
+    }
+
     /**
      * Holds all tab-scoped values stored by the app.
      * Set to null when the scope has been {@link #destroy() destroyed}.
@@ -41,6 +51,7 @@ public final class TabScope implements Serializable {
 
     /**
      * Returns a map which holds all tab-scoped values stored by the app.
+     *
      * @return a map which holds all tab-scoped values stored by the app.
      */
     @NotNull
@@ -51,6 +62,7 @@ public final class TabScope implements Serializable {
     /**
      * Adds a tab scope destroy listener. The listeners will be called before
      * {@link #getValues() values} are cleared.
+     *
      * @param listener scope destroy listener to call.
      * @return registration
      */
@@ -66,6 +78,7 @@ public final class TabScope implements Serializable {
 
     /**
      * Returns a map holding all tab scopes in a session.
+     *
      * @return a map, mapping {@link ExtendedClientDetails#getWindowName()} (a unique ID of a browser tab)
      * to the TabScope instance, holding all tab-scoped values.
      */
@@ -82,6 +95,7 @@ public final class TabScope implements Serializable {
 
     /**
      * Sets up the tab scope mechanism. Call this from {@link com.vaadin.flow.server.VaadinServiceInitListener#serviceInit(ServiceInitEvent)}.
+     *
      * @param tabInitListener invoked when the tab scope is ready to be used. Invoked exactly once for a browser tab,
      *                        before any route or layout is created or initialized. In the listener,
      *                        you can store any init values to {@link #getValues()}, or perform any
@@ -115,9 +129,10 @@ public final class TabScope implements Serializable {
 
     /**
      * Initializes the tab scope.
+     *
      * @param tabInitListener when the tab scope has been initialized, this listener is called. Invoked exactly once for a browser tab,
-     *                         before any route or layout is created or initialized.
-     *                         Serves as a replacement for Vaadin 8 UIInitListener.
+     *                        before any route or layout is created or initialized.
+     *                        Serves as a replacement for Vaadin 8 UIInitListener.
      */
     private static void init(@NotNull SerializableConsumer<TabScope> tabInitListener) {
         final UI ui = Objects.requireNonNull(UI.getCurrent(), "Must be called from Vaadin UI thread");
@@ -128,7 +143,7 @@ public final class TabScope implements Serializable {
         ui.getPage().retrieveExtendedClientDetails(ecd -> {
             TabScope tabScope1 = getInstances().get(ecd.getWindowName());
             if (tabScope1 == null) {
-                tabScope1 = new TabScope();
+                tabScope1 = new TabScope(ecd.getWindowName());
                 getInstances().put(ecd.getWindowName(), tabScope1);
                 tabInitListener.accept(tabScope1);
             }
@@ -154,6 +169,7 @@ public final class TabScope implements Serializable {
      * Vaadin UI thread.
      * <br/>
      * Can not be called from the UI init listener itself, or before the UI init listener has been run.
+     *
      * @return the tab scope, not null.
      */
     @NotNull
