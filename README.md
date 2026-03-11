@@ -101,5 +101,6 @@ Couple of considerations:
   a configurable timeout though...
 * or maybe not: on page reload, it is expected that the new UI springs to life
   fast. So maybe I can wait 60 seconds tops, then kill the tab scope.
+* Not so fast: when tab is closed, [the beacon kills UI eagerly](https://vaadin.com/blog/vaadin-flow-24.1-drastically-reduces-memory-usage). But if the tab is reopened, it should continue with the tab scope stored in that UI... however, experiments show that reopened tab doesn't keep window.name => this is a new tab => no need to preserve tab scope for UIs nuked by beacon.
 
 Remains to be seen.
