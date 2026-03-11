@@ -137,6 +137,7 @@ public final class TabScope implements Serializable {
                closed = true;
                uis.clear();
                destroyListeners.forEach(it -> it.accept(TabScope.this));
+               destroyListeners.clear();
                values = null;
                if (removeFromScopeMap) {
                    removeFromScopeMap();
