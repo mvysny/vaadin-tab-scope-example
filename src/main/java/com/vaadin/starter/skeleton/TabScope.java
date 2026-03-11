@@ -42,7 +42,7 @@ public final class TabScope implements Serializable {
 
     /**
      * Holds all tab-scoped values stored by the app.
-     * Set to null when the scope has been {@link #destroy() destroyed}.
+     * Set to null when the scope has been closed.
      */
     @Nullable
     private Attributes values = new Attributes();
@@ -70,15 +70,32 @@ public final class TabScope implements Serializable {
         @Nullable
         private Long orphanedSince = null;
 
+        private boolean closed = false;
+
+        private void requireNotClosed() {
+            if (closed) {
+                throw new IllegalStateException("Invalid state: closed");
+            }
+        }
+
         public void add(@NotNull UI ui) {
-            uis.add(Objects.requireNonNull(ui));
+            Objects.requireNonNull(ui);
+            requireNotClosed();
+            uis.add(ui);
             orphanedSince = null;
         }
 
         public void remove(@NotNull UI ui) {
+            if (closed) {
+                return;
+            }
             if (!uis.remove(Objects.requireNonNull(ui))) {
                 throw new IllegalStateException("Invalid state: uis doesn't contain given ui");
             }
+            updateOrphaned();
+        }
+
+        private void updateOrphaned() {
             uis.removeIf(UI::isClosing);
             if (uis.isEmpty()) {
                 // orphaned - no active UI points to this tab scope.
@@ -94,11 +111,43 @@ public final class TabScope implements Serializable {
                     '}';
         }
 
-        public void cleanupIfOrphaned() {
-            if (orphanedSince != null && System.currentTimeMillis() - orphanedSince > CLEANUP_DURATION_MS) {
-                destroy();
-                removeScope();
+        @NotNull
+        private final List<SerializableConsumer<TabScope>> destroyListeners = new ArrayList<>();
+
+        public void closeIfOrphaned() {
+            if (closed) {
+                return;
             }
+            updateOrphaned();
+            if (orphanedSince != null && System.currentTimeMillis() - orphanedSince > CLEANUP_DURATION_MS) {
+                close(true);
+            }
+        }
+
+        private void close(boolean removeFromScopeMap) {
+           if (!closed) {
+               closed = true;
+               uis.clear();
+               destroyListeners.forEach(it -> it.accept(TabScope.this));
+               values = null;
+               if (removeFromScopeMap) {
+                   removeFromScopeMap();
+               }
+           }
+        }
+
+        private void removeFromScopeMap() {
+            @SuppressWarnings("unchecked")
+            Map<String, TabScope> instances = (Map<String, TabScope>) VaadinSession.getCurrent().getAttribute("tab-scopes");
+            if (instances != null) {
+                instances.remove(windowName);
+            }
+        }
+
+        @NotNull
+        public Registration addDestroyListener(@NotNull SerializableConsumer<TabScope> listener) {
+            requireNotClosed();
+            return Registration.addAndRemove(destroyListeners, Objects.requireNonNull(listener));
         }
     }
 
@@ -111,9 +160,6 @@ public final class TabScope implements Serializable {
     public Attributes getValues() {
         return Objects.requireNonNull(values, "this scope has been destroyed");
     }
-
-    @NotNull
-    private final List<SerializableConsumer<TabScope>> destroyListeners = new ArrayList<>();
 
     /**
      * Adds a tab scope destroy listener. The listeners will be called before
@@ -128,23 +174,8 @@ public final class TabScope implements Serializable {
      * @return registration
      */
     @NotNull
-    public Registration addDestroyListener(SerializableConsumer<TabScope> listener) {
-        return Registration.addAndRemove(destroyListeners, listener);
-    }
-
-    private void destroy() {
-        destroyListeners.forEach(listener -> listener.accept(this));
-        destroyListeners.clear();
-        values = null;
-        lifecycle.uis.clear();
-    }
-
-    private void removeScope() {
-        @SuppressWarnings("unchecked")
-        Map<String, TabScope> instances = (Map<String, TabScope>) VaadinSession.getCurrent().getAttribute("tab-scopes");
-        if (instances != null) {
-            instances.remove(windowName);
-        }
+    public Registration addDestroyListener(@NotNull SerializableConsumer<TabScope> listener) {
+        return lifecycle.addDestroyListener(listener);
     }
 
     /**
@@ -196,7 +227,7 @@ public final class TabScope implements Serializable {
         @SuppressWarnings("unchecked")
         Map<String, TabScope> instances = (Map<String, TabScope>) session.getAttribute("tab-scopes");
         if (instances != null) {
-            instances.values().forEach(TabScope::destroy);
+            instances.values().forEach(it -> it.lifecycle.close(false));
             instances.clear();
             session.setAttribute("tab-scopes", null);
         }
@@ -281,6 +312,6 @@ public final class TabScope implements Serializable {
             throw new IllegalStateException("Invalid state: no session lock");
         }
         final List<TabScope> scopes = new ArrayList<>(getInstances().values());
-        scopes.forEach(it -> it.lifecycle.cleanupIfOrphaned());
+        scopes.forEach(it -> it.lifecycle.closeIfOrphaned());
     }
 }
