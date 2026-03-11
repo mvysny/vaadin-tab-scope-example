@@ -39,6 +39,7 @@ public final class TabScope implements Serializable {
         return "TabScope{" + windowName + '}';
     }
 
+
     /**
      * Holds all tab-scoped values stored by the app.
      * Set to null when the scope has been {@link #destroy() destroyed}.
@@ -47,7 +48,50 @@ public final class TabScope implements Serializable {
     private Attributes values = new Attributes();
 
     @NotNull
-    private final List<SerializableConsumer<TabScope>> destroyListeners = new ArrayList<>();
+    private final Lifecycle lifecycle = new Lifecycle();
+
+    /**
+     * Tracks lifecycle of the owner tab scope.
+     */
+    private class Lifecycle implements Serializable {
+        /**
+         * A set of UIs hooked to this tab scope. Overwhelmingly contains exactly
+         * one UI, but on page refresh, it may contain zero or two UIs, based on
+         * the ordering of old-UI-destroy and new-UI-create events.
+         * <br/>
+         * This set is only used to track whether a tab scope is active.
+         */
+        private final Set<UI> uis = new HashSet<>();
+        /**
+         * Once 60 seconds passed since the last UI of a tab scope is closed, the tab scope is considered
+         * orphaned and will be destroyed at some point.
+         */
+        private static final Long CLEANUP_DURATION_MS = 10 * 1000L;
+        @Nullable
+        private Long orphanedSince = null;
+
+        public void add(@NotNull UI ui) {
+            uis.add(Objects.requireNonNull(ui));
+            orphanedSince = null;
+        }
+
+        public void remove(@NotNull UI ui) {
+            if (!uis.remove(Objects.requireNonNull(ui))) {
+                throw new IllegalStateException("Invalid state: uis doesn't contain given ui");
+            }
+            if (uis.isEmpty()) {
+                // orphaned?
+                orphanedSince = System.currentTimeMillis();
+            }
+        }
+
+        public void cleanupIfOrphaned() {
+            if (orphanedSince != null && System.currentTimeMillis() - orphanedSince > CLEANUP_DURATION_MS) {
+                destroy();
+                removeScope();
+            }
+        }
+    }
 
     /**
      * Returns a map which holds all tab-scoped values stored by the app.
@@ -58,6 +102,9 @@ public final class TabScope implements Serializable {
     public Attributes getValues() {
         return Objects.requireNonNull(values, "this scope has been destroyed");
     }
+
+    @NotNull
+    private final List<SerializableConsumer<TabScope>> destroyListeners = new ArrayList<>();
 
     /**
      * Adds a tab scope destroy listener. The listeners will be called before
@@ -78,7 +125,17 @@ public final class TabScope implements Serializable {
 
     private void destroy() {
         destroyListeners.forEach(listener -> listener.accept(this));
+        destroyListeners.clear();
         values = null;
+        lifecycle.uis.clear();
+    }
+
+    private void removeScope() {
+        @SuppressWarnings("unchecked")
+        Map<String, TabScope> instances = (Map<String, TabScope>) VaadinSession.getCurrent().getAttribute("tab-scopes");
+        if (instances != null) {
+            instances.remove(windowName);
+        }
     }
 
     /**
@@ -150,12 +207,16 @@ public final class TabScope implements Serializable {
         // That can be retrieved from the ExtendedClientDetails (ECD).
         // Fetch the Window Name, create a new tab scope for it, and fire tabInitListener.
         ui.getPage().retrieveExtendedClientDetails(ecd -> {
-            TabScope tabScope1 = getInstances().get(ecd.getWindowName());
-            if (tabScope1 == null) {
-                tabScope1 = new TabScope(ecd.getWindowName());
-                getInstances().put(ecd.getWindowName(), tabScope1);
-                tabInitListener.accept(tabScope1);
+            cleanupOrphans();
+            TabScope tabScope = getInstances().get(ecd.getWindowName());
+            if (tabScope == null) {
+                tabScope = new TabScope(ecd.getWindowName());
+                getInstances().put(ecd.getWindowName(), tabScope);
+                tabInitListener.accept(tabScope);
             }
+            tabScope.lifecycle.add(ui);
+            final TabScope finalTabScope = tabScope;
+            ui.addDetachListener(e -> removeUI(finalTabScope, ui));
         });
 
         // Important note regarding the "before any route or layout is created or initialized"
@@ -195,5 +256,21 @@ public final class TabScope implements Serializable {
             return tabScope;
         }
         throw new IllegalStateException("Trying to retrieve TabScope too early");
+    }
+
+    private static void removeUI(@NotNull TabScope tabScope, @NotNull UI ui) {
+        if (!VaadinSession.getCurrent().hasLock()) {
+            throw new IllegalStateException("Invalid state: no session lock");
+        }
+        tabScope.lifecycle.remove(ui);
+        cleanupOrphans();
+    }
+
+    private static void cleanupOrphans() {
+        if (!VaadinSession.getCurrent().hasLock()) {
+            throw new IllegalStateException("Invalid state: no session lock");
+        }
+        final List<TabScope> scopes = new ArrayList<>(getInstances().values());
+        scopes.forEach(it -> it.lifecycle.cleanupIfOrphaned());
     }
 }
