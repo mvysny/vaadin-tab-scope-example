@@ -64,9 +64,17 @@ public final class TabScope implements Serializable {
         private final Set<UI> uis = new HashSet<>();
         /**
          * Once 60 seconds passed since the last UI of a tab scope is closed, the tab scope is considered
-         * orphaned and will be destroyed at some point.
+         * orphaned and will be destroyed at some point. This timeout is critical:
+         * on page reload, the old UI is closed first before a new UI is created,
+         * creating a situation where zero UIs point to a tab scope.
+         * <br/>
+         * Without timeout, the tab scope would have been closed immediately.
          */
         private static final Long CLEANUP_DURATION_MS = 60 * 1000L;
+
+        /**
+         * Tracks time since when no UIs point to this tab scope.
+         */
         @Nullable
         private Long orphanedSince = null;
 
@@ -210,10 +218,7 @@ public final class TabScope implements Serializable {
         service.addSessionInitListener(event -> {
             event.getSession().addSessionDestroyListener(e2 -> destroyAllTabScopes(e2.getSession()));
         });
-        // @todo maybe listen for UI destroy/close/detach listeners; if all UIs of a particular
-        // tab scope are gone, kill it too. Care must be taken though: during page reload,
-        // there might be a brief period when the old UI is killed but the new one hasn't been created yet.
-        // Introduce a timeout: a tab scope should survive, say, 60 seconds without an active UI.
+        // The UI destroy listeners are added in the init() function.
     }
 
     private static void destroyAllTabScopes(@NotNull VaadinSession session) {
@@ -256,7 +261,14 @@ public final class TabScope implements Serializable {
             }
             tabScope.lifecycle.add(ui);
             final TabScope finalTabScope = tabScope;
-            // @todo this is only called for page reload, but not for tab close???
+
+            // when tab is closed, the beacon should kill UI eagerly:
+            // https://vaadin.com/blog/vaadin-flow-24.1-drastically-reduces-memory-usage
+            // What if the tab is reopened? It should continue with the tab scope stored in that UI...
+            // However, experiments show that reopened tab doesn't keep window.name =>
+            // this is a new tab => no need to preserve tab scope for UIs nuked by beacon.
+            //
+            // Unfortunately the beacon seem to work flakily, at least in Vaadin 25.0 and LibreWolf. /shrug
             ui.addDetachListener(e -> removeUI(finalTabScope, ui));
         });
 
