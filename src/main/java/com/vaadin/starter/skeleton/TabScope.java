@@ -105,7 +105,7 @@ public final class TabScope implements Serializable {
 
         private void updateOrphaned() {
             uis.removeIf(UI::isClosing);
-            if (uis.isEmpty()) {
+            if (uis.isEmpty() && orphanedSince == null) {
                 // orphaned - no active UI points to this tab scope.
                 orphanedSince = System.currentTimeMillis();
             }
