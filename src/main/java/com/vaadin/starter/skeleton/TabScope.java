@@ -66,7 +66,7 @@ public final class TabScope implements Serializable {
          * Once 60 seconds passed since the last UI of a tab scope is closed, the tab scope is considered
          * orphaned and will be destroyed at some point.
          */
-        private static final Long CLEANUP_DURATION_MS = 10 * 1000L;
+        private static final Long CLEANUP_DURATION_MS = 60 * 1000L;
         @Nullable
         private Long orphanedSince = null;
 
@@ -79,10 +79,19 @@ public final class TabScope implements Serializable {
             if (!uis.remove(Objects.requireNonNull(ui))) {
                 throw new IllegalStateException("Invalid state: uis doesn't contain given ui");
             }
+            uis.removeIf(UI::isClosing);
             if (uis.isEmpty()) {
-                // orphaned?
+                // orphaned - no active UI points to this tab scope.
                 orphanedSince = System.currentTimeMillis();
             }
+        }
+
+        @Override
+        public String toString() {
+            return "Lifecycle{" + windowName + ", " +
+                    "uis=" + uis +
+                    ", orphanedSince=" + orphanedSince +
+                    '}';
         }
 
         public void cleanupIfOrphaned() {
@@ -216,6 +225,7 @@ public final class TabScope implements Serializable {
             }
             tabScope.lifecycle.add(ui);
             final TabScope finalTabScope = tabScope;
+            // @todo this is only called for page reload, but not for tab close???
             ui.addDetachListener(e -> removeUI(finalTabScope, ui));
         });
 
